@@ -1,0 +1,18 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - name: FOUNDRY_TOKEN
+    value: $(FOUNDRY_TOKEN)
+  - group: AWS Credentials
+
+jobs:
+  - job: Build
+    displayName: Build and Test
+    steps:
+      - script: |
+          bash ./bin/build.sh
+      - publish: $(Build.SourcesDirectory)/dist
+        artifact: dist

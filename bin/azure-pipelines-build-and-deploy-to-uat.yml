@@ -1,0 +1,86 @@
+trigger:
+  - release
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - group: AWS Credentials
+    FOUNDRY_TOKEN: $(FOUNDRY_TOKEN)  # mapped from secret
+
+stages:
+  - stage: Build
+    displayName: Build and Test
+    jobs:
+      - job: Build
+        displayName: Build and Test
+        steps:
+          - script: |
+              bash ./bin/build.sh
+          - publish: $(Build.SourcesDirectory)/dist
+            artifact: dist
+
+  - stage: DeployToUAT
+    dependsOn: Build
+    displayName: Deploy to UAT
+    jobs:
+      - deployment: DeployToUAT
+        displayName: Deploy to UAT
+        environment: UAT
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    mv $(Pipeline.Workspace)/dist .
+                    bash ./bin/deploy.sh
+                  env:
+                    ENVIRONMENT: testing
+
+      - deployment: DeployToPerformance
+        displayName: Deploy to Performance
+        environment: Performance
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    mv $(Pipeline.Workspace)/dist .
+                    bash ./bin/deploy.sh
+                  env:
+                    ENVIRONMENT: perf
+
+  - stage: DeployToRelease
+    dependsOn: DeployToUAT
+    displayName: Deploy to Release
+    jobs:
+      - deployment: DeployToRelease
+        displayName: Deploy to Release
+        environment: Release - Primary
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    mv $(Pipeline.Workspace)/dist .
+                    bash ./bin/deploy.sh
+                  env:
+                    ENVIRONMENT: production
+
+      - deployment: DeployToAptia
+        dependsOn: DeployToRelease
+        displayName: Deploy to Aptia
+        environment: Release - Aptia
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    mv $(Pipeline.Workspace)/dist .
+                    bash ./bin/deploy.sh
+                  env:
+                    ENVIRONMENT: prod-aptia

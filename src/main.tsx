@@ -1,0 +1,17 @@
+// src/main.tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import {ChakraProvider} from '@chakra-ui/react';
+import {system} from './theme';
+import {BrowserRouter} from "react-router-dom";
+import App from "./pages/App";
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+        <ChakraProvider value={system}>
+            <BrowserRouter>
+                <App/>
+            </BrowserRouter>
+        </ChakraProvider>
+    </React.StrictMode>
+);

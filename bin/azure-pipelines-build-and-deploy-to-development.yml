@@ -1,0 +1,33 @@
+trigger:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - group: AWS Credentials
+    FOUNDRY_TOKEN: $(FOUNDRY_TOKEN)  # mapped from secret
+
+jobs:
+  - job: Build
+    displayName: Build and Test
+    steps:
+      - script: |
+          bash ./bin/build.sh
+      - publish: $(Build.SourcesDirectory)/dist
+        artifact: dist
+
+  - deployment: Deploy
+    dependsOn: Build
+    displayName: Deploy to Development
+    environment: Development
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: self
+            - script: |
+                mv $(Pipeline.Workspace)/dist .
+                bash ./bin/deploy.sh
+              env:
+                ENVIRONMENT: development
